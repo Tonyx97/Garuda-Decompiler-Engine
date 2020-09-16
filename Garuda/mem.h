@@ -18,7 +18,7 @@ namespace mem
 	inline HANDLE process_handle = nullptr;
 	inline uint32_t pid = 0;
 
-	inline MODULEINFO g_process_info {};
+	inline MODULEINFO process_info {};
 	inline uint8_t* process_memory = nullptr;
 	inline uint32_t process_size = 0;
 
@@ -36,7 +36,7 @@ namespace mem
 		PROCESSENTRY32 entry;
 		entry.dwSize = sizeof(PROCESSENTRY32);
 
-		uint32_t pid = 0;
+		uint32_t lpid = 0;
 
 		if (Process32First(snapshot, &entry))
 		{
@@ -44,7 +44,7 @@ namespace mem
 			{
 				if (!wcscmp(entry.szExeFile, name))
 				{
-					pid = entry.th32ProcessID;
+					lpid = entry.th32ProcessID;
 					break;
 				}
 			} while (Process32Next(snapshot, &entry));
@@ -52,7 +52,7 @@ namespace mem
 
 		CloseHandle(snapshot);
 
-		return (pid = pid);
+		return (pid = lpid);
 	}
 
 	MODULEINFO get_module(const wchar_t* name)
@@ -173,21 +173,21 @@ namespace mem
 	{
 		dbg::println(dbg::WHITE, "-------------------------------");
 
-		g_process_info = get_module(mod_name);
+		process_info = get_module(mod_name);
 
-		if (!g_process_info.lpBaseOfDll || !g_process_info.SizeOfImage)
+		if (!process_info.lpBaseOfDll || !process_info.SizeOfImage)
 			return false;
 
 		if (!process_memory || !process_size)
 		{
-			process_memory = new uint8_t[process_size = g_process_info.SizeOfImage];
+			process_memory = new uint8_t[process_size = process_info.SizeOfImage];
 
 			dbg::println(dbg::WHITE, "Reading process...");
 
-			rpm_by_pages((uintptr_t)g_process_info.lpBaseOfDll, process_memory, process_size);
+			rpm_by_pages((uintptr_t)process_info.lpBaseOfDll, process_memory, process_size);
 
-			dbg::println(dbg::WHITE, "Base: 0x%llx", g_process_info.lpBaseOfDll);
-			dbg::println(dbg::WHITE, "Size: 0x%x", g_process_info.SizeOfImage);
+			dbg::println(dbg::WHITE, "Base: 0x%llx", process_info.lpBaseOfDll);
+			dbg::println(dbg::WHITE, "Size: 0x%x", process_info.SizeOfImage);
 
 			return true;
 		}
@@ -198,7 +198,7 @@ namespace mem
 	template <typename F>
 	uintptr_t scan_internal(const wchar_t* mod_name, const char* sig, const F& fn, bool subtract_local_base = true)
 	{
-		return fn(scan_sig((uintptr_t)g_process_info.lpBaseOfDll, g_process_info.SizeOfImage, sig)) - (subtract_local_base ? (uint64_t)process_memory : 0);
+		return fn(scan_sig((uintptr_t)process_info.lpBaseOfDll, process_info.SizeOfImage, sig)) - (subtract_local_base ? (uint64_t)process_memory : 0);
 	}
 };
 

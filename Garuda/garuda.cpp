@@ -59,6 +59,34 @@ namespace garuda
 		case X86_REG_R8D:
 		case X86_REG_R8W:
 		case X86_REG_R8B:	return X86_REG_R8;
+		case X86_REG_R9:
+		case X86_REG_R9D:
+		case X86_REG_R9W:
+		case X86_REG_R9B:	return X86_REG_R9;
+		case X86_REG_R10:
+		case X86_REG_R10D:
+		case X86_REG_R10W:
+		case X86_REG_R10B:	return X86_REG_R10;
+		case X86_REG_R11:
+		case X86_REG_R11D:
+		case X86_REG_R11W:
+		case X86_REG_R11B:	return X86_REG_R11;
+		case X86_REG_R12:
+		case X86_REG_R12D:
+		case X86_REG_R12W:
+		case X86_REG_R12B:	return X86_REG_R12;
+		case X86_REG_R13:
+		case X86_REG_R13D:
+		case X86_REG_R13W:
+		case X86_REG_R13B:	return X86_REG_R13;
+		case X86_REG_R14:
+		case X86_REG_R14D:
+		case X86_REG_R14W:
+		case X86_REG_R14B:	return X86_REG_R14;
+		case X86_REG_R15:
+		case X86_REG_R15D:
+		case X86_REG_R15W:
+		case X86_REG_R15B:	return X86_REG_R15;
 		}
 
 		return reg;
@@ -100,12 +128,12 @@ namespace garuda
 
 	bool function_info::create_snapshot(global_info* gi, uint64_t base_addr, uint64_t offset, size_t size)
 	{
+		this->gi = gi;
+		this->base_address = base_addr;
+		this->offset = offset;
+
 		if (!snapshot.open())
 			return false;
-
-		this->gi = gi;
-		base_address = base_addr;
-		this->offset = offset;
 
 		return snapshot.disasm(base_addr + offset, size);
 	}

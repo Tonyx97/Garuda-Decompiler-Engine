@@ -7,6 +7,7 @@ extern "C" __declspec(dllexport) void __test_func_1();
 
 int main()
 {
+#if TEST == 0
 	garuda::global_info gi {};
 
 	auto& parsing_info = gi.get_parse_info();
@@ -22,8 +23,7 @@ int main()
 	gi.end();
 
 	gi.print(true);
-
-#if TEST != 0
+#else
 	execute_tests();
 #endif
 
