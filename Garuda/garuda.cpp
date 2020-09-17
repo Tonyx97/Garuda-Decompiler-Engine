@@ -460,6 +460,10 @@ namespace garuda
 
 		define_variables();
 
+		// dispatch and save all final instructions and branches
+
+		std::unordered_set<instruction_info*> branch_targets_created;
+
 		for (auto&& ins : instructions)
 		{
 			for (auto&& branch : branches)
@@ -472,21 +476,12 @@ namespace garuda
 					const auto jmp = branch->jmp,
 							   target = branch->target;
 
-					bool label_already_created = false;
-					
 					if (is_target)
 					{
-						for (auto&& branch2 : branches)
-							if (branch2->target == target && branch2->created)
-							{
-								label_already_created = true;
-								break;
-							}
-
-						if (label_already_created)
+						if (auto it = branch_targets_created.find(target); it != branch_targets_created.end())
 							continue;
 
-						branch->created = true;
+						branch_targets_created.insert(target);
 					}
 					
 					if (auto it = ins_post_proc_callbacks.find(x86_insn(jmp->id)); it != ins_post_proc_callbacks.end())
