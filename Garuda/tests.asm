@@ -5,7 +5,7 @@ __test_func_1 proc
 	xor rax, rax
 	mov rcx, 10
 
-loop_:
+loop_:          ; loop 5 times
 
 	mov rdx, 1
 	shl rdx, 2
