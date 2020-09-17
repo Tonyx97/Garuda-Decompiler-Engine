@@ -19,42 +19,42 @@ namespace garuda
 		bool create_condition;
 	};
 
-	std::string _X86_INS_JE(pp_instruction_dispatch_data* pidd)
+	static inline std::string _X86_INS_JE(pp_instruction_dispatch_data* pidd)
 	{
 		if (pidd->create_condition) return "if (" + pidd->bi->v0->name + " == " + pidd->bi->v1->name + ") goto " + pidd->bi->label_name + ';';
 		else						return pidd->bi->label_name + ":";
 		return "TODO";
 	}
 
-	std::string _X86_INS_JNE(pp_instruction_dispatch_data* pidd)
+	static inline std::string _X86_INS_JNE(pp_instruction_dispatch_data* pidd)
 	{
 		if (pidd->create_condition) return "if (" + pidd->bi->v0->name + " != " + pidd->bi->v1->name + ") goto " + pidd->bi->label_name + ';';
 		else						return pidd->bi->label_name + ":";
 		return "TODO";
 	}
 
-	std::string _X86_INS_JG(pp_instruction_dispatch_data* pidd)
+	static inline std::string _X86_INS_JG(pp_instruction_dispatch_data* pidd)
 	{
 		if (pidd->create_condition) return "if (" + pidd->bi->v0->name + " > " + pidd->bi->v1->name + ") goto " + pidd->bi->label_name + ';';
 		else						return pidd->bi->label_name + ":";
 		return "TODO";
 	}
 
-	std::string _X86_INS_JGE(pp_instruction_dispatch_data* pidd)
+	static inline std::string _X86_INS_JGE(pp_instruction_dispatch_data* pidd)
 	{
 		if (pidd->create_condition) return "if (" + pidd->bi->v0->name + " >= " + pidd->bi->v1->name + ") goto " + pidd->bi->label_name + ';';
 		else						return pidd->bi->label_name + ":";
 		return "TODO";
 	}
 
-	std::string _X86_INS_JL(pp_instruction_dispatch_data* pidd)
+	static inline std::string _X86_INS_JL(pp_instruction_dispatch_data* pidd)
 	{
 		if (pidd->create_condition) return "if (" + pidd->bi->v0->name + " < " + pidd->bi->v1->name + ") goto " + pidd->bi->label_name + ';';
 		else						return pidd->bi->label_name + ":";
 		return "TODO";
 	}
 
-	std::string _X86_INS_JLE(pp_instruction_dispatch_data* pidd)
+	static inline std::string _X86_INS_JLE(pp_instruction_dispatch_data* pidd)
 	{
 		if (pidd->create_condition) return "if (" + pidd->bi->v0->name + " <= " + pidd->bi->v1->name + ") goto " + pidd->bi->label_name + ';';
 		else						return pidd->bi->label_name + ":";

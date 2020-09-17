@@ -26,7 +26,7 @@ namespace garuda
 		bool parsing;
 	};
 
-	std::string _X86_INS_ADD(instruction_dispatch_data* idd)
+	static inline std::string _X86_INS_ADD(instruction_dispatch_data* idd)
 	{
 		if (idd->op1->type == X86_OP_REG)
 		{
@@ -53,7 +53,7 @@ namespace garuda
 		return "TODO";
 	}
 
-	std::string _X86_INS_SUB(instruction_dispatch_data* idd)
+	static inline std::string _X86_INS_SUB(instruction_dispatch_data* idd)
 	{
 		if (idd->op1->type == X86_OP_REG)
 		{
@@ -80,7 +80,7 @@ namespace garuda
 		return "TODO";
 	}
 
-	std::string _X86_INS_IMUL(instruction_dispatch_data* idd)
+	static inline std::string _X86_INS_IMUL(instruction_dispatch_data* idd)
 	{
 		if (idd->op2)
 		{
@@ -101,7 +101,7 @@ namespace garuda
 		return "TODO";
 	}
 
-	std::string _X86_INS_MUL(instruction_dispatch_data* idd)
+	static inline std::string _X86_INS_MUL(instruction_dispatch_data* idd)
 	{
 		if (idd->op1->type == X86_OP_REG)
 		{
@@ -113,7 +113,7 @@ namespace garuda
 		return "TODO";
 	}
 
-	std::string _X86_INS_AND(instruction_dispatch_data* idd)
+	static inline std::string _X86_INS_AND(instruction_dispatch_data* idd)
 	{
 		if (idd->op1->type == X86_OP_REG)
 		{
@@ -123,7 +123,7 @@ namespace garuda
 		return "TODO";
 	}
 
-	std::string _X86_INS_XOR(instruction_dispatch_data* idd)
+	static inline std::string _X86_INS_XOR(instruction_dispatch_data* idd)
 	{
 		if (idd->op1->type == X86_OP_REG)
 		{
@@ -139,19 +139,19 @@ namespace garuda
 		return "TODO";
 	}
 
-	std::string _X86_INS_SHL(instruction_dispatch_data* idd)
+	static inline std::string _X86_INS_SHL(instruction_dispatch_data* idd)
 	{
 		if (idd->op2->type == X86_OP_IMM) return idd->op1->variable->name + " <<= 0x" + utils::to_hex(static_cast<operand_imm*>(idd->op2)->imm);
 		return "TODO";
 	}
 
-	std::string _X86_INS_SHR(instruction_dispatch_data* idd)
+	static inline std::string _X86_INS_SHR(instruction_dispatch_data* idd)
 	{
 		if (idd->op2->type == X86_OP_IMM) return idd->op1->variable->name + " >>= 0x" + utils::to_hex(static_cast<operand_imm*>(idd->op2)->imm);
 		return "TODO";
 	}
 
-	std::string _X86_INS_ROL(instruction_dispatch_data* idd)
+	static inline std::string _X86_INS_ROL(instruction_dispatch_data* idd)
 	{
 		const auto op1_var_name = idd->op1->variable->name,
 			postfix = utils::get_type_postfix_from_size(idd->op1->size);
@@ -164,7 +164,7 @@ namespace garuda
 		return "TODO";
 	}
 
-	std::string _X86_INS_ROR(instruction_dispatch_data* idd)
+	static inline std::string _X86_INS_ROR(instruction_dispatch_data* idd)
 	{
 		const auto op1_var_name = idd->op1->variable->name,
 			postfix = utils::get_type_postfix_from_size(idd->op1->size);
@@ -176,61 +176,8 @@ namespace garuda
 		}
 		return "TODO";
 	}
-
-	std::string _X86_INS_MOVDQU(instruction_dispatch_data* idd)
-	{
-		/*if (idd->op2 && idd->op2->type == X86_OP_REG) return " = " + idd->op1->variables[0]->name;
-		return " = data";*/
-		return "TODO";
-	}
-
-	std::string _X86_INS_MOVDQA(instruction_dispatch_data* idd)
-	{
-		/*switch (idd->op1->type)
-		{
-		case X86_OP_MEM: return (idd->parsing ? "" : " = ") + idd->op1->variables[0]->name;
-		}
-
-		if (idd->op2)
-			return " = " + idd->op1->variables[0]->name;
-		return " data";*/
-		return "TODO";
-	}
-
-	std::string _X86_INS_PADDQ(instruction_dispatch_data* idd)
-	{
-		/*std::string op2_fixed;
-
-		switch (idd->op2->type)
-		{
-		case X86_OP_REG: op2_fixed = idd->op2->var_name;										break;
-		case X86_OP_IMM: op2_fixed = "0x" + idd->op2->imm;										break;
-		case X86_OP_MEM: op2_fixed = "0x" + (idd->op2->imm.empty() ? idd->op2->mem.disp : idd->op2->imm);	break;
-		}
-
-		return " += " + op2_fixed;*/
-		return "TODO";
-	}
-
-	std::string _X86_INS_PSLLQ(instruction_dispatch_data* idd)
-	{
-		//if (idd->op2->type == X86_OP_IMM) return " = " + idd->variable_name + " << 0x" + idd->op2->imm;
-		return "TODO";
-	}
-
-	std::string _X86_INS_PSRLQ(instruction_dispatch_data* idd)
-	{
-		//if (idd->op2->type == X86_OP_IMM) return " = " + idd->variable_name + " >> 0x" + idd->op2->imm;
-		return "TODO";
-	}
-
-	std::string _X86_INS_POR(instruction_dispatch_data* idd)
-	{
-		//return " = " + idd->op1->var_name + " ^ " + idd->op2->var_name;
-		return "TODO";
-	}
 	
-	std::string _X86_INS_LEA(instruction_dispatch_data* idd)
+	static inline std::string _X86_INS_LEA(instruction_dispatch_data* idd)
 	{
 		if (idd->op2 && idd->op2->type == X86_OP_MEM)
 		{
@@ -319,18 +266,71 @@ namespace garuda
 		return "TODO";
 	}
 
-	std::string _X86_INS_MOVABS(instruction_dispatch_data* idd)
+	static inline std::string _X86_INS_MOVABS(instruction_dispatch_data* idd)
 	{
 		return _X86_INS_MOV(idd);
 	}
 
-	std::string _X86_INS_MOVSX(instruction_dispatch_data* idd)
+	static inline std::string _X86_INS_MOVSX(instruction_dispatch_data* idd)
 	{
 		return _X86_INS_MOV(idd);
 	}
 
-	std::string _X86_INS_MOVZX(instruction_dispatch_data* idd)
+	static inline std::string _X86_INS_MOVZX(instruction_dispatch_data* idd)
 	{
 		return _X86_INS_MOV(idd);
+	}
+
+	static inline std::string _X86_INS_MOVDQU(instruction_dispatch_data* idd)
+	{
+		/*if (idd->op2 && idd->op2->type == X86_OP_REG) return " = " + idd->op1->variables[0]->name;
+		return " = data";*/
+		return "TODO";
+	}
+
+	static inline std::string _X86_INS_MOVDQA(instruction_dispatch_data* idd)
+	{
+		/*switch (idd->op1->type)
+		{
+		case X86_OP_MEM: return (idd->parsing ? "" : " = ") + idd->op1->variables[0]->name;
+		}
+
+		if (idd->op2)
+			return " = " + idd->op1->variables[0]->name;
+		return " data";*/
+		return "TODO";
+	}
+
+	static inline std::string _X86_INS_PADDQ(instruction_dispatch_data* idd)
+	{
+		/*std::string op2_fixed;
+
+		switch (idd->op2->type)
+		{
+		case X86_OP_REG: op2_fixed = idd->op2->var_name;										break;
+		case X86_OP_IMM: op2_fixed = "0x" + idd->op2->imm;										break;
+		case X86_OP_MEM: op2_fixed = "0x" + (idd->op2->imm.empty() ? idd->op2->mem.disp : idd->op2->imm);	break;
+		}
+
+		return " += " + op2_fixed;*/
+		return "TODO";
+	}
+
+	static inline std::string _X86_INS_PSLLQ(instruction_dispatch_data* idd)
+	{
+		//if (idd->op2->type == X86_OP_IMM) return " = " + idd->variable_name + " << 0x" + idd->op2->imm;
+		return "TODO";
+	}
+
+	static inline std::string _X86_INS_PSRLQ(instruction_dispatch_data* idd)
+	{
+		//if (idd->op2->type == X86_OP_IMM) return " = " + idd->variable_name + " >> 0x" + idd->op2->imm;
+		return "TODO";
+	}
+
+	static inline std::string _X86_INS_POR(instruction_dispatch_data* idd)
+	{
+		//return " = " + idd->op1->var_name + " ^ " + idd->op2->var_name;
+		return "TODO";
 	}
 };

@@ -159,8 +159,6 @@ namespace garuda
 		using instructions_tuple = std::tuple<instructions_iterator, instructions_value_type>;
 		using instructions_tuple_ex = std::tuple<instructions_iterator, instructions_value_type>;
 
-		using instruction_it_instruction_tuple = std::tuple<instructions_iterator, instruction_info*>;
-
 		/**
 		* Cleans all resources used by this instance
 		*/
@@ -195,8 +193,14 @@ namespace garuda
 							   cs_x86* arch);
 
 		/**
+		* Do the post processing (remove unused variables, optimize code, etc)
+		* @return True if the post processing was successful, false otherwise
+		*/
+		bool do_post_processing();
+
+		/**
 		* Generates the pseudo-code after the parsing
-		* @return True if the code was generated successfully
+		* @return True if the code was generated successfully, false otherwise
 		*/
 		bool generate_code();
 
@@ -237,9 +241,9 @@ namespace garuda
 		/**
 		* Finds the instruction from the specified address
 		* @param offset The offset starting from the base address of the code
-		* @return A tuple containing the position of the instruction in the vector and the instruction itself
+		* @return A instruction_info* instance corresponding to the found instruction
 		*/
-		instruction_it_instruction_tuple find_instruction_by_address(uint64_t offset);
+		instruction_info* find_instruction_by_address(uint64_t offset);
 
 		helper::snapshot* get_snapshot()								{ return &snapshot; }
 
@@ -391,6 +395,24 @@ namespace garuda
 					  size_t size);
 
 		/**
+		* Adds the last unpack of the main 'add_lines<dbg::HEADER>' method to the global output
+		* @tparam T The type of the line
+		* @param color The color of the current text
+		* @param text The current text
+		*/
+		template <unsigned int T, std::enable_if_t<T == dbg::HEADER>* = nullptr>
+		void add_lines(uint16_t color, const std::string& text) { header.push_back(dbg::make_text(color, text)); }
+
+		/**
+		* Adds the last unpack of the main 'add_lines<dbg::FOOTER>' method to the global output
+		* @tparam T The type of the line
+		* @param color The color of the current text
+		* @param text The current text
+		*/
+		template <unsigned int T, std::enable_if_t<T == dbg::FOOTER>* = nullptr>
+		void add_lines(uint16_t color, const std::string& text) { footer.push_back(dbg::make_text(color, text)); }
+
+		/**
 		* Cleans all resources used by this instance
 		*/
 		void destroy();
@@ -398,7 +420,7 @@ namespace garuda
 	public:
 
 		global_info();
-		~global_info()										{ destroy(); }
+		~global_info()											{ destroy(); }
 
 		// parsing functions
 
@@ -444,7 +466,7 @@ namespace garuda
 		* Adds a function to the functions container for post-processing
 		* @param val The function
 		*/
-		void add_function(function_info* val)				{ functions.push_back(val); }
+		void add_function(function_info* val)					{ functions.push_back(val); }
 
 		/**
 		* Finds an instruction in memory
@@ -455,39 +477,35 @@ namespace garuda
 		*/
 		uint64_t find_instruction(uint64_t base_addr, x86_insn instruction, size_t max_size = 0x100);
 
-		parse_info& get_parse_info()						{ return parsing_info; }
+		parse_info& get_parse_info()							{ return parsing_info; }
 
 		// output functions
 
 		/**
-		* Adds a new line to the global output
+		* Adds a new lines to the global output using variadic parameters unpacking
 		* @tparam T The type of the line (T == HEADER)
-		* @param val The line that will be added
+		* @param color The color of the current text
+		* @param text The current text
 		*/
-		template <unsigned int T, std::enable_if_t<T == dbg::HEADER>* = nullptr>
-		void add_line(const dbg::text& val)					{ header.push_back(val); }
+		template <unsigned int T, typename... A, std::enable_if_t<T == dbg::HEADER>* = nullptr>
+		void add_lines(uint16_t color, const std::string& text, A&&... args)
+		{
+			header.push_back(dbg::make_text(color, text));
+			add_lines<T>(args...);
+		}
 
 		/**
-		* Adds an empty line to the global output
-		* @tparam T The type of the line (T == HEADER)
-		*/
-		template <unsigned int T, std::enable_if_t<T == dbg::HEADER>* = nullptr>
-		void add_empty_line()								{ header.push_back(dbg::make_text(dbg::WHITE, "\n")); }
-
-		/**
-		* Adds a new line to the global output
+		* Adds a new lines to the global output using variadic parameters unpacking
 		* @tparam T The type of the line (T == FOOTER)
-		* @param val The line that will be added
+		* @param color The color of the current text
+		* @param text The current text
 		*/
-		template <unsigned int T, std::enable_if_t<T == dbg::FOOTER>* = nullptr>
-		void add_line(const dbg::text& val)					{ footer.push_back(val); }
-
-		/**
-		* Adds an empty line to the global output
-		* @tparam T The type of the line (T == FOOTER)
-		*/
-		template <unsigned int T, std::enable_if_t<T == dbg::FOOTER>* = nullptr>
-		void add_empty_line()								{ footer.push_back(dbg::make_text(dbg::WHITE, "\n")); }
+		template <unsigned int T, typename... A, std::enable_if_t<T == dbg::FOOTER>* = nullptr>
+		void add_lines(uint16_t color, const std::string& text, A&&... args)
+		{
+			footer.push_back(dbg::make_text(color, text));
+			add_lines<T>(args...);
+		}
 
 		/**
 		* Adds an include to the global output
@@ -507,15 +525,15 @@ namespace garuda
 		* Adds a base address to the global output
 		* @param val The base address name
 		*/
-		void add_base_address(const std::string& val)		{ base_address_name = val; }
+		void add_base_address(const std::string& val)			{ base_address_name = val; }
 
 		/**
 		* Adds a comment to the next function
 		* @param val The comment of the function
 		*/
-		void add_next_fn_comment(const std::string& val)	{ next_fn_comment = val; }
+		void add_next_fn_comment(const std::string& val)		{ next_fn_comment = val; }
 
-		const std::string& get_base_address_name()			{ return base_address_name; }
+		const std::string& get_base_address_name()				{ return base_address_name; }
 
 		/**
 		* Adds a function to read a process memory

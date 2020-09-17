@@ -357,14 +357,14 @@ namespace garuda
 		return true;
 	}
 
-	bool function_info::generate_code()
+	bool function_info::do_post_processing()
 	{
 		if (variables.empty())
 			return false;
 
 		// remove the corresponding redundant variables and instructions
 
-		for (auto [it, var] = variables_tuple { variables.begin(), variables.begin()->second }; it != variables.end(); var = it->second)
+		for (auto [it, var] = variables_tuple{ variables.begin(), variables.begin()->second }; it != variables.end(); var = it->second)
 		{
 			if (var->dereferences == 0)
 			{
@@ -410,11 +410,7 @@ namespace garuda
 			}
 		}
 
-		// define all the used variables
-
-		define_variables();
-
-		// do post processing such as iterations
+		// process conditional jumps
 
 		for (auto [it, ins] = instructions_tuple_ex { instructions.begin(), *instructions.begin() }; it != instructions.end(); ++it, ins = *it)
 		{
@@ -431,7 +427,7 @@ namespace garuda
 			{
 				if (!current_branch_info->jmp || !current_branch_info->target)
 				{
-					if (auto [it, target_instruction] = find_instruction_by_address(static_cast<operand_imm*>(ins->operands[0])->imm); target_instruction)
+					if (auto target_instruction = find_instruction_by_address(static_cast<operand_imm*>(ins->operands[0])->imm))
 					{
 						for (auto&& branch : branches)
 							if (branch->target == target_instruction)
@@ -449,6 +445,20 @@ namespace garuda
 			}
 			}
 		}
+
+		return true;
+	}
+
+	bool function_info::generate_code()
+	{
+		// do post processing
+
+		if (!do_post_processing())
+			return false;
+
+		// define all the used variables
+
+		define_variables();
 
 		for (auto&& ins : instructions)
 		{
@@ -574,16 +584,16 @@ namespace garuda
 		return {};
 	}
 
-	function_info::instruction_it_instruction_tuple function_info::find_instruction_by_address(uint64_t offset)
+	instruction_info* function_info::find_instruction_by_address(uint64_t offset)
 	{
 		auto it = std::find_if(instructions.begin(), instructions.end(), [offset](auto ins) { return (ins->offset == offset); });
-		return { it, it != instructions.end() ? *it : nullptr };
+		return (it != instructions.end() ? *it : nullptr);
 	}
 
 	void function_info::add_template_parameter(const std::string& name)
 	{
-		content.push_back(dbg::make_text(dbg::BLUE, "typename "));
-		content.push_back(dbg::make_text(dbg::CYAN, name));
+		add_line(dbg::make_text(dbg::BLUE, "typename "));
+		add_line(dbg::make_text(dbg::CYAN, name));
 		template_names.insert(name);
 	}
 
@@ -600,14 +610,14 @@ namespace garuda
 				{
 					const auto& str = it->str();
 
-					if (!str.compare("const"))									content.push_back(dbg::make_text(dbg::BLUE, str + " "));
-					else if (!str.compare("&"))									content.push_back(dbg::make_text(dbg::WHITE, str));
-					else if (template_names.find(str) != template_names.end())	content.push_back(dbg::make_text(dbg::CYAN, str));
-					else 														content.push_back(dbg::make_text(dbg::DARK_GREY, str));
+					if (!str.compare("const"))									add_line(dbg::make_text(dbg::BLUE, str + " "));
+					else if (!str.compare("&"))									add_line(dbg::make_text(dbg::WHITE, str));
+					else if (template_names.find(str) != template_names.end())	add_line(dbg::make_text(dbg::CYAN, str));
+					else 														add_line(dbg::make_text(dbg::DARK_GREY, str));
 
 				}
 			}
-			else content.push_back(dbg::make_text(dbg::WHITE, name));
+			else add_line(dbg::make_text(dbg::WHITE, name));
 		}
 	}
 
@@ -621,7 +631,7 @@ namespace garuda
 	{
 		add_line(dbg::make_text(dbg::BLUE, "\tunsigned __int64 "));
 
-		std::set<std::pair<x86_reg, variable_info*>, map_to_set_variable_order> variables_set{ variables.begin(), variables.end() };
+		std::set<std::pair<x86_reg, variable_info*>, map_to_set_variable_order> variables_set { variables.begin(), variables.end() };
 
 		for (auto it = variables_set.begin(); it != variables_set.end(); ++it)
 		{
@@ -642,7 +652,7 @@ namespace garuda
 			indent_level = temp_indent_level;
 
 		for (auto i = 0; i < indent_level; ++i)
-			content.push_back(dbg::make_text(dbg::WHITE, "\t"));
+			add_line(dbg::make_text(dbg::WHITE, "\t"));
 
 		add_line(dbg::make_text_align(dbg::WHITE, val, 50));
 		add_line(dbg::make_text_align(dbg::DARK_GREEN, "// " + mnemonic + '\t' + op_str, 10));
@@ -660,7 +670,7 @@ namespace garuda
 			indent_level = temp_indent_level;
 
 		for (auto i = 0; i < indent_level; ++i)
-			content.push_back(dbg::make_text(dbg::WHITE, "\t"));
+			add_line(dbg::make_text(dbg::WHITE, "\t"));
 
 		add_line(dbg::make_text_nl(dbg::WHITE, val));
 
@@ -672,7 +682,7 @@ namespace garuda
 		add_line(dbg::make_text_nl(dbg::WHITE, ""));
 
 		for (auto i = 0; i < indent_level; ++i)
-			content.push_back(dbg::make_text(dbg::WHITE, "\t"));
+			add_line(dbg::make_text(dbg::WHITE, "\t"));
 
 		add_line(dbg::make_text(dbg::BLUE, "return"));
 		add_line(dbg::make_text_nl(dbg::WHITE, (!variable.empty() ? " " + variable : "") + ';'));
@@ -698,6 +708,13 @@ namespace garuda
 		ins_callbacks.insert({ X86_INS_ROL,		_X86_INS_ROL });
 		ins_callbacks.insert({ X86_INS_ROR,		_X86_INS_ROR });
 
+		// memory instructions
+		ins_callbacks.insert({ X86_INS_LEA,		_X86_INS_LEA });
+		ins_callbacks.insert({ X86_INS_MOV,		_X86_INS_MOV });
+		ins_callbacks.insert({ X86_INS_MOVABS,	_X86_INS_MOVABS });
+		ins_callbacks.insert({ X86_INS_MOVSX,	_X86_INS_MOVSX });
+		ins_callbacks.insert({ X86_INS_MOVZX,	_X86_INS_MOVZX });
+
 		// SSE instructions
 		ins_callbacks.insert({ X86_INS_MOVDQU,	_X86_INS_MOVDQU });
 		ins_callbacks.insert({ X86_INS_MOVDQA,	_X86_INS_MOVDQA });
@@ -705,13 +722,6 @@ namespace garuda
 		ins_callbacks.insert({ X86_INS_PSLLQ,	_X86_INS_PSLLQ });
 		ins_callbacks.insert({ X86_INS_PSRLQ,	_X86_INS_PSRLQ });
 		ins_callbacks.insert({ X86_INS_POR,		_X86_INS_POR });
-
-		// memory instructions
-		ins_callbacks.insert({ X86_INS_LEA,		_X86_INS_LEA });
-		ins_callbacks.insert({ X86_INS_MOV,		_X86_INS_MOV });
-		ins_callbacks.insert({ X86_INS_MOVABS,	_X86_INS_MOVABS });
-		ins_callbacks.insert({ X86_INS_MOVSX,	_X86_INS_MOVSX });
-		ins_callbacks.insert({ X86_INS_MOVZX,	_X86_INS_MOVZX });
 
 		ins_pre_proc.insert(X86_INS_RET);
 		ins_pre_proc.insert(X86_INS_CALL);
@@ -790,54 +800,52 @@ namespace garuda
 
 	void global_info::add_rpm_function(const std::string& str)
 	{
-		add_line<dbg::HEADER>(dbg::make_text(dbg::BLUE, "template "));
-		add_line<dbg::HEADER>(dbg::make_text(dbg::WHITE, "<"));
-		add_line<dbg::HEADER>(dbg::make_text(dbg::BLUE, "typename "));
-		add_line<dbg::HEADER>(dbg::make_text(dbg::CYAN, "T"));
-		add_line<dbg::HEADER>(dbg::make_text(dbg::WHITE, ", "));
-		add_line<dbg::HEADER>(dbg::make_text(dbg::BLUE, "typename "));
-		add_line<dbg::HEADER>(dbg::make_text(dbg::CYAN, "B"));
-		add_line<dbg::HEADER>(dbg::make_text_nl(dbg::WHITE, ">"));
-		add_line<dbg::HEADER>(dbg::make_text(dbg::CYAN, "T "));
-		add_line<dbg::HEADER>(dbg::make_text(dbg::WHITE, "rpm("));
-		add_line<dbg::HEADER>(dbg::make_text(dbg::BLUE, "const "));
-		add_line<dbg::HEADER>(dbg::make_text(dbg::CYAN, "B"));
-		add_line<dbg::HEADER>(dbg::make_text(dbg::WHITE, "& "));
-		add_line<dbg::HEADER>(dbg::make_text(dbg::DARK_GREY, "ptr"));
-		add_line<dbg::HEADER>(dbg::make_text_nl(dbg::WHITE, ")"));
-		add_line<dbg::HEADER>(dbg::make_text_nl(dbg::WHITE, "{"));
-		add_line<dbg::HEADER>(dbg::make_text(dbg::BLUE, "\treturn "));
-		add_line<dbg::HEADER>(dbg::make_text_nl(dbg::WHITE, str + ';'));
-		add_line<dbg::HEADER>(dbg::make_text_nl(dbg::WHITE, "}\n"));
+		add_lines<dbg::HEADER>(dbg::BLUE, "template ",
+							   dbg::WHITE, "<",
+							   dbg::BLUE, "typename ",
+							   dbg::CYAN, "T",
+							   dbg::WHITE, ", ",
+							   dbg::BLUE, "typename ",
+							   dbg::CYAN, "B",
+							   dbg::WHITE, ">\n",
+							   dbg::CYAN, "T ",
+							   dbg::WHITE, "rpm(",
+							   dbg::BLUE, "const ",
+							   dbg::CYAN, "B",
+							   dbg::WHITE, "& ",
+							   dbg::DARK_GREY, "ptr",
+							   dbg::WHITE, ")\n",
+							   dbg::WHITE, "{\n",
+							   dbg::BLUE, "\treturn ",
+							   dbg::WHITE, str + ";\n",
+							   dbg::WHITE, "}\n\n");
 	}
 
 	void global_info::begin()
 	{
-		add_line<dbg::HEADER>(dbg::make_text_nl(dbg::DARK_GREY, "#pragma once"));
-		add_empty_line<dbg::HEADER>();
-		add_line<dbg::HEADER>(dbg::make_text_nl(dbg::DARK_GREY, "#ifndef GARUDA_OUT_H"));
-		add_line<dbg::HEADER>(dbg::make_text_nl(dbg::DARK_GREY, "#define GARUDA_OUT_H"));
-		add_empty_line<dbg::HEADER>();
-
-		add_line<dbg::HEADER>(dbg::make_text_nl(dbg::DARK_GREEN, "// File auto generated by GARUDA engine (developed by Tonyx97)"));
-		add_empty_line<dbg::HEADER>();
+		add_lines<dbg::HEADER>(dbg::DARK_GREY, "#pragma once\n",
+							   EMPTY_NEW_LINE,
+							   dbg::DARK_GREY, "#ifndef GARUDA_OUT_H\n",
+							   dbg::DARK_GREY, "#define GARUDA_OUT_H\n",
+							   EMPTY_NEW_LINE,
+							   dbg::DARK_GREEN, "// File auto generated by GARUDA engine (developed by Tonyx97)\n",
+							   EMPTY_NEW_LINE);
 
 		add_include("intrin.h");
-		add_empty_line<dbg::HEADER>();
 
-		add_define("LOBYTE", "x", "(*((BYTE*)&(x)))");
-		add_define("LOWORD", "x", "(*((WORD*)&(x)))");
-		add_define("LODWORD", "x", "(*((DWORD*)&(x)))");
-		add_define("HIBYTE", "x", "(*((BYTE*)&(x)+1))");
-		add_define("HIWORD", "x", "(*((WORD*)&(x)+1))");
-		add_define("HIDWORD", "x", "(*((DWORD*)&(x)+1))");
+		add_define("LOBYTE",	"x", "*((unsigned __int8*)&x)");
+		add_define("LOWORD",	"x", "*((unsigned __int16*)&x)");
+		add_define("LODWORD",	"x", "*((unsigned __int32*)&x)");
+		add_define("HIBYTE",	"x", "*((unsigned __int8*)&x + 1)");
+		add_define("HIWORD",	"x", "*((unsigned __int16*)&x + 1)");
+		add_define("HIDWORD",	"x", "*((unsigned __int32*)&x + 1)");
 
-		add_empty_line<dbg::HEADER>();
+		add_lines<dbg::HEADER>(EMPTY_NEW_LINE);
 	}
 
 	void global_info::end()
 	{
-		add_line<dbg::FOOTER>(dbg::make_text(dbg::DARK_GREY, "#endif"));
+		add_lines<dbg::FOOTER>(dbg::DARK_GREY, "#endif");
 	}
 
 	void global_info::print(bool copy_to_clipboard)
@@ -853,18 +861,16 @@ namespace garuda
 
 	void global_info::add_include(const std::string& val)
 	{
-		add_line<dbg::HEADER>(dbg::make_text(dbg::DARK_GREY, "#include "));
-		add_line<dbg::HEADER>(dbg::make_text_nl(dbg::DARK_YELLOW, "<" + val + ">"));
+		add_lines<dbg::HEADER>(dbg::DARK_GREY, "#include ", dbg::DARK_YELLOW, "<" + val + ">\n", EMPTY_NEW_LINE);
 	}
 
 	void global_info::add_define(const std::string& name, const std::string& params, const std::string& def)
 	{
-		add_line<dbg::HEADER>(dbg::make_text(dbg::DARK_GREY, "#define "));
-		add_line<dbg::HEADER>(dbg::make_text(dbg::DARK_PURPLE, name));
+		add_lines<dbg::HEADER>(dbg::DARK_GREY, "#define ", dbg::DARK_PURPLE, name);
 
 		if (!params.empty())
-			add_line<dbg::HEADER>(dbg::make_text(dbg::WHITE, "(" + params + ")"));
+			add_lines<dbg::HEADER>(dbg::WHITE, "(" + params + ")");
 
-		add_line<dbg::HEADER>(dbg::make_text_nl(dbg::WHITE, '\t' + def));
+		add_lines<dbg::HEADER>(dbg::WHITE, '\t' + def, EMPTY_NEW_LINE);
 	}
 };

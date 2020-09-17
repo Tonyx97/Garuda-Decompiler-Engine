@@ -151,4 +151,6 @@ namespace dbg
 	}
 };
 
+#define EMPTY_NEW_LINE dbg::WHITE, "\n"
+
 #endif
