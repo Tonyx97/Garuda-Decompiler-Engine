@@ -8,6 +8,9 @@
 namespace dbg
 {
 	static constexpr auto SINGLE_TEXT_MAX_LENGTH = 0x100;
+	
+	inline std::stringstream clipboard_ss;
+	inline bool clipboard_enabled = true;
 
 	enum eColor : unsigned short
 	{
@@ -99,11 +102,21 @@ namespace dbg
 			if (t.alignment > 0)
 				align(t.alignment);
 
+			auto new_line = (t.nl ? "\n" : "");
+
 			color c(t.color_id);
-			std::cout << t.data << (t.nl ? "\n" : "");
+
+			std::cout << t.data << new_line;
+
+			if (clipboard_enabled)
+				clipboard_ss << t.data << new_line;
+
 			return os;
 		}
 	};
+
+	static inline void begin_clipboard()	{ clipboard_enabled = true; }
+	static inline void end_clipboard()		{ clipboard_enabled = false; utils::to_clipboard(clipboard_ss.str()); }
 
 	template <typename... A>
 	static inline text make_text(uint16_t color, const std::string& txt, A&&... args)

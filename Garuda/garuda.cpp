@@ -842,9 +842,13 @@ namespace garuda
 
 	void global_info::print(bool copy_to_clipboard)
 	{
+		dbg::begin_clipboard();
+
 		for (auto&& line : header)	line.print();
 		for (auto&& fn : functions) fn->print();
 		for (auto&& line : footer)	line.print();
+
+		dbg::end_clipboard();
 	}
 
 	void global_info::add_include(const std::string& val)
