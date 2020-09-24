@@ -200,9 +200,10 @@ namespace garuda
 
 		/**
 		* Generates the pseudo-code after the parsing
+		* @param pi A parsing info reference ptr
 		* @return True if the code was generated successfully, false otherwise
 		*/
-		bool generate_code();
+		bool generate_code(parse_info& pi);
 
 		/**
 		* Saves a instruction into the array for generation purposes

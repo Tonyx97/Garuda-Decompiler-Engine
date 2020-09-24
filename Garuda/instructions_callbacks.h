@@ -14,6 +14,8 @@ namespace garuda
 
 		function_info* fi;
 
+		instruction_info* ii;
+
 		operand_base_info* op1,
 						 * op2,
 						 * op3;
@@ -22,8 +24,6 @@ namespace garuda
 
 		uint64_t module_base,
 				 ip;
-
-		bool parsing;
 	};
 
 	static inline std::string _X86_INS_ADD(instruction_dispatch_data* idd)
@@ -233,33 +233,37 @@ namespace garuda
 			}
 			else if (idd->op2->type == X86_OP_MEM)
 			{
-				std::string mem_str = idd->op1->variable->name + " = rpm<" + utils::get_type_from_size(true, idd->op2->size) + ">(";
-
-				const auto op2_mem = static_cast<operand_mem*>(idd->op2);
-
-				if (auto base = op2_mem->base; base != X86_REG_INVALID)
+				if (!idd->ii->assigned_param)
 				{
-					if (auto base_variable_name = idd->fi->get_variable_name_from_reg(base); base_variable_name.has_value())
-						mem_str += base_variable_name.value();
-					else return idd->op1->variable->name + " = data";
+					std::string mem_str = idd->op1->variable->name + " = rpm<" + utils::get_type_from_size(true, idd->op2->size) + ">(";
+
+					const auto op2_mem = static_cast<operand_mem*>(idd->op2);
+
+					if (auto base = op2_mem->base; base != X86_REG_INVALID)
+					{
+						if (auto base_variable_name = idd->fi->get_variable_name_from_reg(base); base_variable_name.has_value())
+							mem_str += base_variable_name.value();
+						else return idd->op1->variable->name + " = data";
+					}
+
+					if (auto index = op2_mem->index; index != X86_REG_INVALID)
+					{
+						auto index_name = idd->fi->get_variable_name_from_reg(index);
+
+						if (!index_name.has_value())
+							return idd->op1->variable->name + " = data";
+
+						mem_str += " + " + index_name.value();
+
+						if (auto scale = op2_mem->scale; scale > 1)
+							mem_str += " * 0x" + utils::to_hex(scale);
+					}
+
+					const auto displacement = op2_mem->disp;
+
+					return (displacement != 0 ? mem_str + " + 0x" + utils::to_hex(displacement) : mem_str) + ')';
 				}
-
-				if (auto index = op2_mem->index; index != X86_REG_INVALID)
-				{
-					auto index_name = idd->fi->get_variable_name_from_reg(index);
-
-					if (!index_name.has_value())
-						return idd->op1->variable->name + " = data";
-
-					mem_str += " + " + index_name.value();
-
-					if (auto scale = op2_mem->scale; scale > 1)
-						mem_str += " * 0x" + utils::to_hex(scale);
-				}
-
-				const auto displacement = op2_mem->disp;
-
-				return (displacement != 0 ? mem_str + " + 0x" + utils::to_hex(displacement) : mem_str) + ')';
+				else return idd->op1->variable->name + " = p" + std::to_string(*idd->ii->assigned_param);
 			}
 		}
 

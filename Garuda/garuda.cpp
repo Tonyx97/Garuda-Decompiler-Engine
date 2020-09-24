@@ -216,7 +216,7 @@ namespace garuda
 				}
 				else ++var_info->dereferences;
 
-				if ((rw_access || write_access) && var_info->dereferences > 0)
+				if ((rw_access || write_access)/* && var_info->dereferences > 0*/)
 					previous_written_variable = var_info;
 				else
 				{
@@ -364,7 +364,7 @@ namespace garuda
 
 		// remove the corresponding redundant variables and instructions
 
-		for (auto [it, var] = variables_tuple{ variables.begin(), variables.begin()->second }; it != variables.end(); var = it->second)
+		for (auto [it, var] = variables_tuple { variables.begin(), variables.begin()->second }; it != variables.end(); var = it->second)
 		{
 			if (var->dereferences == 0)
 			{
@@ -449,7 +449,7 @@ namespace garuda
 		return true;
 	}
 
-	bool function_info::generate_code()
+	bool function_info::generate_code(parse_info& pi)
 	{
 		// do post processing
 
@@ -505,12 +505,22 @@ namespace garuda
 
 			if (auto it = ins_callbacks.find(ins->id); it != ins_callbacks.end() || ins->id == X86_INS_RET)
 			{
+				bool decrease_assigned_param = false;
+
+				if ((pi.flags & FLAG_SEQ_PARAM_ASSIGNATION) && pi.assigned_param >= 0)
+				{
+					ins->assigned_param = &pi.assigned_param;
+					decrease_assigned_param = true;
+				}
+				else ins->assigned_param = nullptr;
+
 				const auto total_operands = ins->operands.size();
 
 				instruction_dispatch_data idd
 				{
 					gi,
 					this,
+					ins,
 					total_operands > 0 ? ins->operands[0] : nullptr,
 					total_operands > 1 ? ins->operands[1] : nullptr,
 					total_operands > 2 ? ins->operands[2] : nullptr,
@@ -523,6 +533,9 @@ namespace garuda
 					add_instruction_line(it->second(&idd) + ";", ins->mnemonic, ins->op_str);
 				else if (return_size > 0)
 					add_return_line(previous_written_variable->name);
+
+				if (decrease_assigned_param)
+					--pi.assigned_param;
 			}
 		}
 
@@ -754,7 +767,7 @@ namespace garuda
 
 		fi->add_comment(next_fn_comment);
 		fi->add_template("T");
-		fi->add_definition(return_type, name, "const T& data");
+		fi->add_definition(return_type, name, "const T& p0");
 		fi->begin();
 
 		const auto snapshot = fi->get_snapshot();
@@ -764,7 +777,7 @@ namespace garuda
 			fi->parse_instruction(parsing_info, ins, &ins->detail->x86);
 		}, [&]() { return !snapshot->is_parsing(); });
 
-		if (!fi->generate_code())
+		if (!fi->generate_code(parsing_info))
 			return false;
 
 		fi->end();

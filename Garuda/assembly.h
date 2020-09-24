@@ -19,6 +19,7 @@ namespace garuda
 		FLAG_IGNORE_LAST_INSTRUCTION	= (1 << 1),
 		FLAG_IGNORE_REG_IN_DST			= (1 << 2),
 		FLAG_IGNORE_REG_IN_SRC			= (1 << 3),
+		FLAG_SEQ_PARAM_ASSIGNATION		= (1 << 4),
 	};
 
 	struct variable_info
@@ -87,6 +88,8 @@ namespace garuda
 
 		uint32_t id;
 
+		int32_t* assigned_param;
+
 		~instruction_info()
 		{
 			for (auto&& op : operands)
@@ -96,7 +99,7 @@ namespace garuda
 		bool is_reg_in_any_operand(x86_reg reg)
 		{
 			for (auto&& op : operands)
-				if (op->variable && op->variable->reg == reg)
+				if (op->variable && op->variable->reg_category == reg)
 					return true;
 			return false;
 		}
@@ -131,6 +134,8 @@ namespace garuda
 
 		uint32_t flags = FLAG_NONE,
 				 return_flags = RETURN_ON_REACH_SPECIFIED_END;
+
+		int32_t assigned_param = -1;
 	};
 };
 
