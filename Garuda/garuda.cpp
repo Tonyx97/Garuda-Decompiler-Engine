@@ -142,14 +142,14 @@ namespace garuda
 										  cs_insn* ins,
 										  cs_x86* arch)
 	{
-		if (pi.start_instruction != X86_INS_INVALID && ins->id != pi.start_instruction)
-			return false;
-		else pi.start_instruction = X86_INS_INVALID;
-
 #if PRINT_ALL_INSTRUCTIONS
 		dbg::println(dbg::WHITE, "\n------------------------------");
 		dbg::println(dbg::WHITE, "0x%llx (0x%x):\t%s\t%s", ins->address, ins->id, ins->mnemonic, ins->op_str);
 #endif
+
+		if (pi.start_instruction != X86_INS_INVALID && ins->id != pi.start_instruction)
+			return false;
+		else pi.start_instruction = X86_INS_INVALID;
 		
 		auto ins_info = new instruction_info();
 
@@ -771,6 +771,10 @@ namespace garuda
 		fi->begin();
 
 		const auto snapshot = fi->get_snapshot();
+
+#if PRINT_ALL_INSTRUCTIONS
+		dbg::println(dbg::WHITE, "--------------------------------------------");
+#endif
 
 		snapshot->for_each_instruction([&](cs_insn* ins)
 		{

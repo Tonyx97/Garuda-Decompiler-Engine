@@ -134,7 +134,7 @@ namespace garuda
 				return idd->op1->variable->name + " ^= " + idd->op2->variable->name;
 			}
 			if (idd->op2->type == X86_OP_MEM) return idd->op1->variable->name + " ^= data";
-			if (idd->op2->type == X86_OP_IMM) return idd->op1->variable->name + " ^= " + utils::to_hex(static_cast<operand_imm*>(idd->op2)->imm);
+			if (idd->op2->type == X86_OP_IMM) return idd->op1->variable->name + " ^= 0x" + utils::to_hex(static_cast<operand_imm*>(idd->op2)->imm);
 		}
 		return "TODO";
 	}

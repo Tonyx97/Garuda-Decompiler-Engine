@@ -20,7 +20,7 @@
 #include "debug.h"
 #include "assembly.h"
 
-#define PRINT_ALL_INSTRUCTIONS 0
+#define PRINT_ALL_INSTRUCTIONS 1
 
 #define LOBYTE(x)		(*((unsigned __int8*)&(x)))
 #define LOWORD(x)		(*((unsigned __int16*)&(x)))
