@@ -20,7 +20,7 @@
 #include "debug.h"
 #include "assembly.h"
 
-#define PRINT_ALL_INSTRUCTIONS 1
+#define PRINT_ALL_INSTRUCTIONS 0
 
 #define LOBYTE(x)		(*((unsigned __int8*)&(x)))
 #define LOWORD(x)		(*((unsigned __int16*)&(x)))
@@ -477,6 +477,22 @@ namespace garuda
 		* @return The offset of the found instruction, 0 otherwise
 		*/
 		uint64_t find_instruction(uint64_t base_addr, x86_insn instruction, size_t max_size = 0x100);
+
+		/**
+		* Finds an piece of mem in memory by its bytes
+		* @param base_addr The base address of the code
+		* @param instruction The instruction to be found
+		* @param max_size The maximum size that it will be parsing to
+		* @return The offset of the found memory, 0 otherwise
+		*/
+		uint64_t find_mem(uint64_t base_addr, uint8_t* mem, size_t len, size_t max_size = 0x100);
+
+		/**
+		* Prints all instructions in the specified range
+		* @param base_addr The base address of the code
+		* @param max_size The maximum size that it will be parsing to
+		*/
+		void print_instructions_in_range(uint64_t base_addr, size_t max_size = 0x100);
 
 		parse_info& get_parse_info()							{ return parsing_info; }
 

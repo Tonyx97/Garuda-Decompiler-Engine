@@ -810,6 +810,55 @@ namespace garuda
 		return found_at;
 	}
 
+	uint64_t global_info::find_mem(uint64_t base_addr, uint8_t* mem, size_t len, size_t max_size)
+	{
+		helper::snapshot temp {};
+
+		if (!temp.open())
+			return 0;
+
+		auto curr = base_addr;
+
+		while (true)
+		{
+			int matches = 0;
+
+			for (int i = 0; i < len; ++i)
+				if (mem[i] == *(uint8_t*)(curr + i) || mem[i] == 0xCC)
+					++matches;
+
+			if (matches == len)
+				return curr;
+
+			++curr;
+		}
+
+		return 0;
+	}
+
+	void global_info::print_instructions_in_range(uint64_t base_addr, size_t max_size)
+	{
+		helper::snapshot temp {};
+
+		if (!temp.open())
+			return;
+
+		uint64_t found_at = 0;
+
+		uint64_t offset = 0;
+
+		if (temp.disasm(base_addr, max_size))
+			temp.for_each_instruction([&](cs_insn* ins)
+			{
+				offset = ins->address;
+
+				std::stringstream ss;
+				ss << "0x" << std::hex << offset;
+
+				dbg::println(dbg::WHITE, ss.str() + ":\t" + std::string(ins->mnemonic) + ' ' + ins->op_str);
+			}, [&]() { return (offset > max_size); });
+	}
+
 	void global_info::add_rpm_function(const std::string& str)
 	{
 		add_lines<dbg::HEADER>(dbg::BLUE, "template ",
